@@ -232,7 +232,7 @@ export function activate(context: vscode.ExtensionContext) {
                                 } else {
                                     outputChannel.appendLine(`Generated message: ${message}`);
                                     repository.inputBox.value = message;
-                                    vscode.window.showInformationMessage('✨ Commit message generated!');
+                                    vscode.window.showInformationMessage('Commit message generated!');
                                 }
                             } else {
                                 outputChannel.appendLine('Stdout was empty after trim.');

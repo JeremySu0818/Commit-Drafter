@@ -5,21 +5,16 @@ from dotenv import load_dotenv
 
 def get_base_path():
     if getattr(sys, "frozen", False):
-        # If the application is run as a bundled executable
         return os.path.dirname(sys.executable)
-    # If the application is run as a normal python script
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# Load .env from the base path (where the script or exe is)
 env_path = os.path.join(get_base_path(), ".env")
 load_dotenv(env_path)
-# Also load from current working directory as fallback
 load_dotenv()
 
 
 def save_key_to_env(key_name: str, key_value: str):
-    """Saves or updates a key in the .env file in the base path."""
     lines = []
     if os.path.exists(env_path):
         with open(env_path, "r", encoding="utf-8") as f:
@@ -42,15 +37,16 @@ def save_key_to_env(key_name: str, key_value: str):
     with open(env_path, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
 
+
 SYSTEM_PROMPT = """You are a senior software engineer acting as an autonomous commit message generator.
 Your task is to generate a clean, concise, and meaningful content for a git commit based on the provided diff.
 
 **Constraint Checklist & Confidence Score:**
 1. Language: English Only.
 2. Format: Conventional Commits (Strictly).
-   - `type(scope): description` (First line, max 50 chars ideally, absolute max 72)
-   - (Optional) Body lines (Wrap at 72 chars)
-   - (Optional) Footer (e.g., BREAKING CHANGE: ...)
+- `type(scope): description` (First line, max 50 chars ideally, absolute max 72)
+- (Optional) Body lines (Wrap at 72 chars)
+- (Optional) Footer (e.g., BREAKING CHANGE: ...)
 3. NO Emojis.
 4. Do not include "Signed-off-by" or other metadata unless strictly necessary.
 5. Content: specific and descriptive. Avoid vague messages like "fixed bug" or "updated code".
@@ -72,7 +68,4 @@ Return ONLY the commit message. Do not output markdown code blocks (```), do not
 """
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# Default model names
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-

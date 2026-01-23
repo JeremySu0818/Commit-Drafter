@@ -3,15 +3,9 @@ import sys
 
 
 def get_git_diff(staged: bool = True) -> str:
-    """
-    Get the diff of the current repository.
-    :param staged: If True, get staged changes (cached). If False, get working directory changes.
-    :return: String containing the diff.
-    """
     cmd = ["git", "diff"]
     if staged:
         cmd.append("--cached")
-
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, check=True, encoding="utf-8"
@@ -38,9 +32,6 @@ def is_git_repo() -> bool:
 
 
 def commit_changes(message: str) -> bool:
-    """
-    Commit the staged changes with the given message.
-    """
     try:
         subprocess.run(["git", "commit", "-m", message], check=True)
         return True
@@ -50,9 +41,6 @@ def commit_changes(message: str) -> bool:
 
 
 def stage_all_changes() -> bool:
-    """
-    Stage all changes in the current repository (git add .).
-    """
     try:
         subprocess.run(["git", "add", "."], check=True)
         return True

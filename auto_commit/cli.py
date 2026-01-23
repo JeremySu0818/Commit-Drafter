@@ -20,7 +20,6 @@ from auto_commit.llm_client import (
     APIRequestError,
 )
 
-# Exit codes for different error types
 EXIT_SUCCESS = 0
 EXIT_NOT_GIT_REPO = 1
 EXIT_STAGE_FAILED = 2
@@ -63,10 +62,6 @@ def generate(
         False, "--print-only", help="Only print the generated message to stdout"
     ),
 ):
-    """
-    Generate a commit message based on staged changes.
-    """
-    # Check if we're in a git repository
     if not is_git_repo():
         print_error(
             "Not a git repository. Please run this command inside a git repository.",
@@ -74,19 +69,16 @@ def generate(
         )
         raise typer.Exit(code=EXIT_NOT_GIT_REPO)
 
-    # Stage all changes
     if not print_only:
         with console.status("[bold green]Staging all changes...[/bold green]"):
             if not stage_all_changes():
                 print_error("Failed to stage changes.", "STAGE_FAILED")
                 raise typer.Exit(code=EXIT_STAGE_FAILED)
     else:
-        # In print-only mode, still stage but don't show spinner (non-interactive)
         if not stage_all_changes():
             print_error("Failed to stage changes.", "STAGE_FAILED")
             raise typer.Exit(code=EXIT_STAGE_FAILED)
 
-    # Read staged changes
     if not print_only:
         with console.status("[bold green]Reading staged changes...[/bold green]"):
             diff = get_git_diff(staged=True)
@@ -100,7 +92,6 @@ def generate(
         )
         raise typer.Exit(code=EXIT_NO_CHANGES)
 
-    # Validate provider
     if provider != "gemini":
         print_error(
             f"Provider '{provider}' is not supported. Use 'gemini'.",
@@ -108,20 +99,17 @@ def generate(
         )
         raise typer.Exit(code=EXIT_UNKNOWN_ERROR)
 
-    # Get API Key - NO interactive prompt in print_only mode
     current_key = GEMINI_API_KEY
     key_name = "GEMINI_API_KEY"
 
     if not current_key:
         if print_only:
-            # In print-only mode (non-interactive), fail immediately
             print_error(
                 f"{key_name} is not set. Please set the environment variable or configure it in VS Code.",
                 "API_KEY_MISSING",
             )
             raise typer.Exit(code=EXIT_API_KEY_MISSING)
         else:
-            # In interactive mode, prompt for the key
             console.print(f"[yellow]Missing {key_name}.[/yellow]")
             current_key = Prompt.ask(
                 f"Please enter your {provider} API Key", password=True, console=console
@@ -136,17 +124,13 @@ def generate(
                 )
                 raise typer.Exit(code=EXIT_API_KEY_MISSING)
 
-    # Generate commit message
     try:
         if print_only:
-            # Non-interactive mode: just print the message to stdout
             client = LLMClient(provider=provider, model=model, api_key=current_key)
             message = client.generate_commit_message(diff)
-            # Print ONLY the message to stdout (errors go to stderr)
             print(message)
             return
 
-        # Interactive mode
         with console.status(
             f"[bold green]Generating commit message with {provider}...[/bold green]"
         ):
@@ -189,7 +173,6 @@ def generate(
         print_error(str(e), e.error_code)
         raise typer.Exit(code=EXIT_UNKNOWN_ERROR)
     except typer.Exit:
-        # Re-raise typer exits
         raise
     except Exception as e:
         print_error(f"Unexpected error: {str(e)}", "UNKNOWN")

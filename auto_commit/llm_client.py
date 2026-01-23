@@ -10,16 +10,12 @@ from auto_commit.config import (
 
 
 class LLMClientError(Exception):
-    """Base exception for LLM client errors."""
-
     def __init__(self, message: str, error_code: str = "UNKNOWN"):
         super().__init__(message)
         self.error_code = error_code
 
 
 class APIKeyMissingError(LLMClientError):
-    """Raised when the API key is not set."""
-
     def __init__(self, provider: str):
         super().__init__(
             f"{provider.upper()}_API_KEY is not set. Please configure your API key.",
@@ -28,8 +24,6 @@ class APIKeyMissingError(LLMClientError):
 
 
 class APIKeyInvalidError(LLMClientError):
-    """Raised when the API key is invalid (401/403)."""
-
     def __init__(self, message: str):
         super().__init__(
             f"Invalid API Key: {message}",
@@ -38,8 +32,6 @@ class APIKeyInvalidError(LLMClientError):
 
 
 class APIQuotaExceededError(LLMClientError):
-    """Raised when API quota is exceeded (429)."""
-
     def __init__(self, message: str):
         super().__init__(
             f"API quota exceeded: {message}",
@@ -48,8 +40,6 @@ class APIQuotaExceededError(LLMClientError):
 
 
 class APIRequestError(LLMClientError):
-    """Raised for general API request errors."""
-
     def __init__(self, message: str):
         super().__init__(
             f"API request failed: {message}",
@@ -68,10 +58,8 @@ class LLMClient:
             key = api_key or GEMINI_API_KEY
             if not key:
                 raise APIKeyMissingError(provider)
-            # Initialize the new Gen AI client
             self.client = genai.Client(api_key=key)
             self.model = model or DEFAULT_GEMINI_MODEL
-
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
@@ -86,7 +74,6 @@ class LLMClient:
 
         try:
             if self.provider == "gemini":
-                # New SDK usage
                 response = self.client.models.generate_content(
                     model=self.model,
                     contents=prompt_content,
@@ -98,7 +85,6 @@ class LLMClient:
 
         except ClientError as e:
             error_msg = str(e)
-            # Check for specific error codes
             if "401" in error_msg or "403" in error_msg:
                 raise APIKeyInvalidError(error_msg)
             elif "429" in error_msg:

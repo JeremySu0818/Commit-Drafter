@@ -135,10 +135,10 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
                                 break;
                             case 'keyStatus':
                                 if (message.hasKey) {
-                                    keyStatus.textContent = '✅ API Key is set';
+                                    keyStatus.textContent = 'API Key is set';
                                     keyStatus.style.color = 'var(--vscode-testing-iconPassed)';
                                 } else {
-                                    keyStatus.textContent = '❌ API Key not set';
+                                    keyStatus.textContent = 'API Key not set';
                                     keyStatus.style.color = 'var(--vscode-testing-iconFailed)';
                                 }
                                 break;

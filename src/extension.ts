@@ -86,7 +86,9 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     let disposable = vscode.commands.registerCommand('auto-commit.generate', async (scm?: vscode.SourceControl) => {
-        outputChannel.appendLine('='.repeat(50));
+        await vscode.commands.executeCommand('setContext', 'auto-commit.isGenerating', true);
+        try {
+            outputChannel.appendLine('='.repeat(50));
         outputChannel.appendLine(`[${new Date().toISOString()}] Starting auto-commit generation...`);
 
         // Get the Git extension
@@ -265,6 +267,9 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             }
         );
+        } finally {
+            await vscode.commands.executeCommand('setContext', 'auto-commit.isGenerating', false);
+        }
     });
 
     context.subscriptions.push(disposable);

@@ -23,7 +23,8 @@
         "command": "auto-commit.generate",
         "title": "Auto-Commit: Generate Message",
         "category": "Auto-Commit",
-        "icon": "$(sparkle)"
+        "icon": "$(sparkle)",
+        "enablement": "!auto-commit.isGenerating"
       }
     ],
     "menus": {

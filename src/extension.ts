@@ -85,7 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(SidePanelProvider.viewType, provider)
     );
 
-    let disposable = vscode.commands.registerCommand('auto-commit.generate', async () => {
+    let disposable = vscode.commands.registerCommand('auto-commit.generate', async (scm?: vscode.SourceControl) => {
         outputChannel.appendLine('='.repeat(50));
         outputChannel.appendLine(`[${new Date().toISOString()}] Starting auto-commit generation...`);
 
@@ -104,12 +104,22 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Find the repository
         let repository = null;
-        if (api.repositories.length > 0) {
-            outputChannel.appendLine(`Found ${api.repositories.length} repositories.`);
-            repository = api.repositories[0];
-            outputChannel.appendLine(`Selected repository root: ${repository.rootUri.fsPath}`);
-        } else {
-            outputChannel.appendLine('No repositories found in API.');
+        if (scm) {
+            // If triggered from SCM title or context menu, find matching repository
+            repository = api.repositories.find((r: any) => r.rootUri.toString() === scm.rootUri?.toString());
+            if (repository) {
+                outputChannel.appendLine(`Selected repository from SCM context: ${repository.rootUri.fsPath}`);
+            }
+        }
+
+        if (!repository) {
+            if (api.repositories.length > 0) {
+                outputChannel.appendLine(`Found ${api.repositories.length} repositories.`);
+                repository = api.repositories[0];
+                outputChannel.appendLine(`Selected first repository: ${repository.rootUri.fsPath}`);
+            } else {
+                outputChannel.appendLine('No repositories found in API.');
+            }
         }
 
         if (!repository) {

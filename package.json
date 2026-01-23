@@ -23,10 +23,18 @@
         "command": "auto-commit.generate",
         "title": "Auto-Commit: Generate Message",
         "category": "Auto-Commit",
-        "icon": "$(sparkle)"
+        "icon": "assets/activity-bar.svg"
       }
     ],
-    "menus": {},
+    "menus": {
+      "scm/title": [
+        {
+          "command": "auto-commit.generate",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {

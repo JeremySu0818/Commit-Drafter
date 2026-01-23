@@ -100,7 +100,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
                     <hr />
 
                     <div class="input-group">
-                        <button id="generateBtn">✨ Generate Commit Message</button>
+                        <button id="generateBtn">Generate Commit Message</button>
                     </div>
                 </div>
 

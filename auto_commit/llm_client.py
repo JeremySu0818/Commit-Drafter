@@ -1,13 +1,10 @@
 import os
 from google import genai
 from google.genai import types
-from openai import OpenAI
 from auto_commit.config import (
     SYSTEM_PROMPT,
     GEMINI_API_KEY,
-    OPENAI_API_KEY,
     DEFAULT_GEMINI_MODEL,
-    DEFAULT_OPENAI_MODEL,
 )
 
 
@@ -23,13 +20,6 @@ class LLMClient:
             # Initialize the new Gen AI client
             self.client = genai.Client(api_key=key)
             self.model = model or DEFAULT_GEMINI_MODEL
-
-        elif self.provider == "openai":
-            key = api_key or OPENAI_API_KEY
-            if not key:
-                raise ValueError("OPENAI_API_KEY is not set.")
-            self.client = OpenAI(api_key=key)
-            self.model = model or DEFAULT_OPENAI_MODEL
 
         else:
             raise ValueError(f"Unsupported provider: {provider}")
@@ -52,15 +42,6 @@ class LLMClient:
                 )
                 return response.text.strip()
 
-            elif self.provider == "openai":
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt_content},
-                    ],
-                )
-                return response.choices[0].message.content.strip()
-
         except Exception as e:
             return f"Error generating commit message: {str(e)}"
+

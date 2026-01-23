@@ -3,7 +3,7 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
-from auto_commit.config import GEMINI_API_KEY, OPENAI_API_KEY, save_key_to_env
+from auto_commit.config import GEMINI_API_KEY, save_key_to_env
 from auto_commit.git_ops import (
     get_git_diff,
     is_git_repo,
@@ -21,7 +21,7 @@ console = Console()
 
 @app.command("generate")
 def generate(
-    provider: str = typer.Option("gemini", help="LLM Provider: 'gemini' or 'openai'"),
+    provider: str = typer.Option("gemini", help="LLM Provider: 'gemini'"),
     model: Optional[str] = typer.Option(None, help="Specific model to use (optional)"),
     yes: bool = typer.Option(
         False, "--yes", "-y", help="Auto-commit without confirmation (use with caution)"
@@ -60,8 +60,12 @@ def generate(
     console.print(f"[blue]Using provider: {provider}[/blue]")
 
     # API Key check and prompt
-    current_key = GEMINI_API_KEY if provider == "gemini" else OPENAI_API_KEY
-    key_name = "GEMINI_API_KEY" if provider == "gemini" else "OPENAI_API_KEY"
+    if provider == "gemini":
+        current_key = GEMINI_API_KEY
+        key_name = "GEMINI_API_KEY"
+    else:
+        console.print(f"[bold red]Error:[/bold red] Provider {provider} is no longer supported.")
+        raise typer.Exit(code=1)
 
     if not current_key:
         console.print(f"[yellow]Missing {key_name}.[/yellow]")

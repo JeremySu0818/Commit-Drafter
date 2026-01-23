@@ -1,10 +1,10 @@
 # Auto-Commit CLI Tool
 
-A Python-based CLI tool to automatically generate [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) messages using LLMs (Gemini or OpenAI).
+A Python-based CLI tool to automatically generate [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) messages using Google Gemini.
 
 ## Features
 
-- Support for **Google Gemini** and **OpenAI** APIs.
+- Support for **Google Gemini** API.
 - Generates strict **English** conventional commits.
 - **No emojis** (professional standard).
 - Simple CLI interface using `typer` and `rich`.
@@ -35,16 +35,10 @@ A Python-based CLI tool to automatically generate [Conventional Commits](https:/
 
 ## Usage
 
-Basic usage (uses Gemini by default):
+Basic usage:
 
 ```bash
 python -m src.cli generate
-```
-
-Specify provider:
-
-```bash
-python -m src.cli generate --provider openai
 ```
 
 Auto-commit without confirmation:

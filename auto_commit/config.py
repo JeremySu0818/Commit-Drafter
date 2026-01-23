@@ -72,8 +72,7 @@ Return ONLY the commit message. Do not output markdown code blocks (```), do not
 """
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Default model names
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-DEFAULT_OPENAI_MODEL = "gpt-5-nano"
+

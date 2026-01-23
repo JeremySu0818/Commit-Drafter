@@ -23,7 +23,7 @@
         "command": "auto-commit.generate",
         "title": "Auto-Commit: Generate Message",
         "category": "Auto-Commit",
-        "icon": "assets/activity-bar.svg"
+        "icon": "assets/scm-icon.svg"
       }
     ],
     "menus": {

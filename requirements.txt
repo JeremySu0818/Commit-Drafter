@@ -1,5 +1,0 @@
-typer[all]
-rich
-google-genai
-python-dotenv
-pyinstaller

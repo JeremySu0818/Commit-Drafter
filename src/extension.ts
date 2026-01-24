@@ -1,67 +1,11 @@
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
-import * as path from 'path';
 import { SidePanelProvider } from './SidePanelProvider';
-
-const EXIT_CODES = {
-    SUCCESS: 0,
-    NOT_GIT_REPO: 1,
-    STAGE_FAILED: 2,
-    NO_CHANGES: 3,
-    API_KEY_MISSING: 10,
-    API_KEY_INVALID: 11,
-    QUOTA_EXCEEDED: 12,
-    API_ERROR: 13,
-    COMMIT_FAILED: 20,
-    UNKNOWN_ERROR: 99,
-} as const;
-
-const ERROR_MESSAGES: Record<number, { title: string; action?: string }> = {
-    [EXIT_CODES.NOT_GIT_REPO]: {
-        title: 'Not a Git repository',
-        action: 'Please open a folder that contains a Git repository.',
-    },
-    [EXIT_CODES.STAGE_FAILED]: {
-        title: 'Failed to stage changes',
-        action: 'Check if Git is properly configured.',
-    },
-    [EXIT_CODES.NO_CHANGES]: {
-        title: 'No changes to commit',
-        action: 'Make some changes to your files first.',
-    },
-    [EXIT_CODES.API_KEY_MISSING]: {
-        title: 'API Key not configured',
-        action: 'Please set your Gemini API Key in the Auto-Commit panel.',
-    },
-    [EXIT_CODES.API_KEY_INVALID]: {
-        title: 'Invalid API Key',
-        action: 'Your API Key is invalid or has been revoked. Please check and update it.',
-    },
-    [EXIT_CODES.QUOTA_EXCEEDED]: {
-        title: 'API quota exceeded',
-        action: 'You have exceeded your API quota. Please check your Google AI Studio account.',
-    },
-    [EXIT_CODES.API_ERROR]: {
-        title: 'API request failed',
-        action: 'There was an error communicating with the Gemini API. Please try again.',
-    },
-    [EXIT_CODES.COMMIT_FAILED]: {
-        title: 'Failed to commit changes',
-        action: 'Check if there are any Git conflicts or issues.',
-    },
-    [EXIT_CODES.UNKNOWN_ERROR]: {
-        title: 'An unexpected error occurred',
-        action: 'Check the "Auto-Commit Debug" output for details.',
-    },
-};
-
-function parseStderrError(stderr: string): { errorCode?: string; message?: string } {
-    const codeMatch = stderr.match(/\[([A-Z_]+)\]/);
-    const errorCode = codeMatch ? codeMatch[1] : undefined;
-    const messageMatch = stderr.match(/Error:.*?(?:\[[A-Z_]+\])?\s*(.+)/s);
-    const message = messageMatch ? messageMatch[1].trim() : stderr.trim();
-    return { errorCode, message };
-}
+import {
+    generateCommitMessage,
+    EXIT_CODES,
+    ERROR_MESSAGES,
+    AutoCommitError,
+} from './autoCommit';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Auto-Commit extension is now active!');
@@ -80,6 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
             outputChannel.appendLine('='.repeat(50));
             outputChannel.appendLine(`[${new Date().toISOString()}] Starting auto-commit generation...`);
 
+            // Get Git extension and repository
             const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
             if (!gitExtension) {
                 outputChannel.appendLine('Error: Git extension not found.');
@@ -117,6 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
+            // Get API key from secure storage
             const apiKey = await context.secrets.get('GEMINI_API_KEY');
             if (!apiKey) {
                 outputChannel.appendLine('Warning: No GEMINI_API_KEY found in secure storage.');
@@ -131,6 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
+            // Generate commit message with progress indicator
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -138,109 +85,59 @@ export function activate(context: vscode.ExtensionContext) {
                     cancellable: false,
                 },
                 async (progress) => {
-                    return new Promise<void>(async (resolve) => {
-                        const exePath = path.join(context.extensionPath, 'auto-commit.exe');
-                        outputChannel.appendLine(`Executable Path: ${exePath}`);
+                    outputChannel.appendLine('Calling generateCommitMessage...');
+                    outputChannel.appendLine(`Repository path: ${repository.rootUri.fsPath}`);
 
-                        const cmd = `"${exePath}" generate --print-only`;
-                        outputChannel.appendLine(`Executing command: ${cmd}`);
-
-                        const env = { ...process.env };
-                        outputChannel.appendLine('Injecting GEMINI_API_KEY from secure storage.');
-                        env['GEMINI_API_KEY'] = apiKey;
-
-                        const timeout = 60000;
-                        const childProcess = exec(
-                            cmd,
-                            {
-                                cwd: repository.rootUri.fsPath,
-                                env: env,
-                                timeout: timeout,
-                            },
-                            (error, stdout, stderr) => {
-                                outputChannel.appendLine(`Stdout: ${stdout}`);
-                                if (stderr) {
-                                    outputChannel.appendLine(`Stderr: ${stderr}`);
-                                }
-
-                                if (error) {
-                                    outputChannel.appendLine(`Exit Code: ${error.code}`);
-                                    outputChannel.appendLine(`Error: ${error.message}`);
-
-                                    const exitCode = error.code || EXIT_CODES.UNKNOWN_ERROR;
-                                    const errorInfo = ERROR_MESSAGES[exitCode] || ERROR_MESSAGES[EXIT_CODES.UNKNOWN_ERROR];
-
-                                    const { errorCode, message } = parseStderrError(stderr);
-                                    outputChannel.appendLine(`Parsed Error Code: ${errorCode}`);
-                                    outputChannel.appendLine(`Parsed Error Message: ${message}`);
-
-                                    let errorMessage = errorInfo.title;
-                                    if (message) {
-                                        errorMessage += `: ${message}`;
-                                    }
-
-                                    if (exitCode === EXIT_CODES.API_KEY_MISSING || exitCode === EXIT_CODES.API_KEY_INVALID) {
-                                        vscode.window
-                                            .showErrorMessage(errorMessage, 'Configure API Key')
-                                            .then((action) => {
-                                                if (action === 'Configure API Key') {
-                                                    vscode.commands.executeCommand('auto-commit.view.focus');
-                                                }
-                                            });
-                                    } else if (exitCode === EXIT_CODES.QUOTA_EXCEEDED) {
-                                        vscode.window
-                                            .showErrorMessage(errorMessage, 'Open Google AI Studio')
-                                            .then((action) => {
-                                                if (action === 'Open Google AI Studio') {
-                                                    vscode.env.openExternal(
-                                                        vscode.Uri.parse('https://aistudio.google.com/')
-                                                    );
-                                                }
-                                            });
-                                    } else if (exitCode === EXIT_CODES.NO_CHANGES) {
-                                        vscode.window.showInformationMessage(
-                                            'No changes to commit. Make some changes first!'
-                                        );
-                                    } else {
-                                        vscode.window.showErrorMessage(
-                                            `${errorMessage}. ${errorInfo.action || ''}`
-                                        );
-                                    }
-
-                                    resolve();
-                                    return;
-                                }
-
-                                const message = stdout.trim();
-                                if (message) {
-                                    if (message.startsWith('Error:') || message.includes('Error generating')) {
-                                        outputChannel.appendLine('Warning: stdout contains error message');
-                                        vscode.window.showErrorMessage(message);
-                                    } else {
-                                        outputChannel.appendLine(`Generated message: ${message}`);
-                                        repository.inputBox.value = message;
-                                        vscode.window.showInformationMessage('Commit message generated!');
-                                    }
-                                } else {
-                                    outputChannel.appendLine('Stdout was empty after trim.');
-                                    vscode.window.showWarningMessage(
-                                        'Generated message was empty. Check "Auto-Commit Debug" output for details.'
-                                    );
-                                }
-                                resolve();
-                            }
-                        );
-
-                        childProcess.on('error', (err) => {
-                            outputChannel.appendLine(`Process error: ${err.message}`);
-                            vscode.window.showErrorMessage(
-                                `Failed to run Auto-Commit: ${err.message}`
-                            );
-                            resolve();
-                        });
+                    const result = await generateCommitMessage({
+                        cwd: repository.rootUri.fsPath,
+                        apiKey: apiKey,
+                        stageChanges: true,
                     });
+
+                    if (result.success && result.message) {
+                        outputChannel.appendLine(`Generated message: ${result.message}`);
+                        repository.inputBox.value = result.message;
+                        vscode.window.showInformationMessage('Commit message generated!');
+                    } else if (result.error) {
+                        const error = result.error;
+                        outputChannel.appendLine(`Error: ${error.errorCode} - ${error.message}`);
+
+                        const errorInfo = ERROR_MESSAGES[error.exitCode] || ERROR_MESSAGES[EXIT_CODES.UNKNOWN_ERROR];
+
+                        if (error.exitCode === EXIT_CODES.API_KEY_MISSING || error.exitCode === EXIT_CODES.API_KEY_INVALID) {
+                            const action = await vscode.window.showErrorMessage(
+                                `${errorInfo.title}: ${error.message}`,
+                                'Configure API Key'
+                            );
+                            if (action === 'Configure API Key') {
+                                vscode.commands.executeCommand('auto-commit.view.focus');
+                            }
+                        } else if (error.exitCode === EXIT_CODES.QUOTA_EXCEEDED) {
+                            const action = await vscode.window.showErrorMessage(
+                                `${errorInfo.title}: ${error.message}`,
+                                'Open Google AI Studio'
+                            );
+                            if (action === 'Open Google AI Studio') {
+                                vscode.env.openExternal(
+                                    vscode.Uri.parse('https://aistudio.google.com/')
+                                );
+                            }
+                        } else if (error.exitCode === EXIT_CODES.NO_CHANGES) {
+                            vscode.window.showInformationMessage(
+                                'No changes to commit. Make some changes first!'
+                            );
+                        } else {
+                            vscode.window.showErrorMessage(
+                                `${errorInfo.title}: ${error.message}. ${errorInfo.action || ''}`
+                            );
+                        }
+                    }
                 }
             );
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            outputChannel.appendLine(`Unexpected error: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Auto-Commit failed: ${errorMessage}`);
         } finally {
             await vscode.commands.executeCommand('setContext', 'auto-commit.isGenerating', false);
         }

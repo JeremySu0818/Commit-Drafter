@@ -2,11 +2,6 @@
 
 Auto-Commit is a smart VS Code extension that leverages Large Language Models (LLMs) to automatically generate meaningful, conventional commit messages based on your staged changes. It streamlines your git workflow by analyzing diffs and suggesting professional commit messages directly within your editor.
 
-> **Important Check: Platform Support**
->
-> This tool currently **ONLY supports Windows**.
-> Please ensure you are running on a Windows environment before using or installing this tool.
-
 ## Features
 
 - **Seamless VS Code Integration**: Access Auto-Commit directly from the Activity Bar or Command Palette.
@@ -14,10 +9,10 @@ Auto-Commit is a smart VS Code extension that leverages Large Language Models (L
 - **Conventional Commits**: Generates messages following the Conventional Commits specification (e.g., `feat:`, `fix:`, `docs:`).
 - **One-Click Generation**: Instantly generate commit messages for your staged changes.
 - **Preview & Edit**: Review the generated message before committing.
+- **Cross-Platform**: Works on Windows, macOS, and Linux.
 
 ## Requirements
 
-- **Operating System**: Windows 10/11
 - **Editor**: Visual Studio Code v1.80.0 or higher.
 - **Git**: Installed and available in your PATH.
 - **API Key**: A valid [Google Gemini API Key](https://aistudio.google.com/api-keys).
@@ -57,6 +52,35 @@ The generated message will appear in the input box. You can:
 
 - Edit the message if needed.
 - Click **Commit** (check mark) to commit the changes to your repository.
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Building
+
+```bash
+# Install dependencies
+npm install
+
+# Compile TypeScript
+npm run compile
+
+# Watch mode for development
+npm run watch
+```
+
+### Project Structure
+
+```
+src/
+├── extension.ts      # VS Code extension entry point
+├── autoCommit.ts     # Core logic: Git operations, LLM client, error handling
+└── SidePanelProvider.ts  # Webview panel for API key configuration
+```
 
 ## License
 

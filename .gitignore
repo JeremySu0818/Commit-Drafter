@@ -1,14 +1,15 @@
-
-.venv/
-.env
-__pycache__/
-*.pyc
-/build
-/dist
-*.exe
-*.spec
-auto_commit.egg-info
+# Dependencies
 /node_modules
+
+# Build outputs
 /out
+/dist
+
+# VS Code
 /.vscode
+
+# Environment
+.env
+
+# Package files
 *.vsix

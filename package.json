@@ -2,7 +2,7 @@
   "name": "auto-commit",
   "displayName": "Auto-Commit",
   "description": "Generate conventional commit messages using LLMs.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "JeremySu0818",
   "icon": "resources/icon.png",
   "repository": {

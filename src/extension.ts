@@ -91,7 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
                     const result = await generateCommitMessage({
                         cwd: repository.rootUri.fsPath,
                         apiKey: apiKey,
-                        stageChanges: true,
+                        stageChanges: false,
                     });
 
                     if (result.success && result.message) {

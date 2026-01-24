@@ -389,8 +389,14 @@ export async function generateCommitMessage(
       }
     }
 
-    // Get the staged diff
-    const diff = await gitOps.getDiff(true);
+    // Get the diff
+    let diff = await gitOps.getDiff(true);
+    
+    // If no staged changes found and auto-staging was disabled, try to get unstaged changes
+    if (!diff.trim() && !stageChanges) {
+      diff = await gitOps.getDiff(false);
+    }
+
     if (!diff.trim()) {
       throw new NoChangesError();
     }

@@ -45,7 +45,7 @@ You can generate a commit message in two ways:
 #### Method B: Command Palette
 
 1.  Press `Ctrl+Shift+P` to open the Command Palette.
-2.  Type `Auto-Commit: Generate Message` and select it.
+2.  Type `Auto-Commit: Generate Commit Message` and select it.
 
 ### 4. API Key Setup
 

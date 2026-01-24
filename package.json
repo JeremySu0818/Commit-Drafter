@@ -21,7 +21,7 @@
     "commands": [
       {
         "command": "auto-commit.generate",
-        "title": "Auto-Commit: Generate Message",
+        "title": "Auto-Commit: Generate Commit Message",
         "category": "Auto-Commit",
         "icon": "$(sparkle)",
         "enablement": "!auto-commit.isGenerating"
@@ -41,7 +41,7 @@
         {
           "id": "auto-commit-activitybar",
           "title": "Auto Commit",
-          "icon": "assets/activity-bar.svg"
+          "icon": "$(sparkle)"
         }
       ]
     },
@@ -51,7 +51,7 @@
           "type": "webview",
           "id": "auto-commit.view",
           "name": "Auto Commit",
-          "icon": "assets/activity-bar.svg"
+          "icon": "$(sparkle)"
         }
       ]
     }

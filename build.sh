@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "[*] Starting build process for Auto-Commit (TypeScript Edition)..."
+echo "[*] Starting build process for Auto-Commit..."
 echo
 
 echo "[*] Step 1: Installing dependencies..."

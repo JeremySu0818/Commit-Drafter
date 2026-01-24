@@ -18,26 +18,18 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(SidePanelProvider.viewType, provider)
     );
 
-    let disposable = vscode.commands.registerCommand('auto-commit.generate', async (arg?: vscode.SourceControl | { stageUntrackedOnly?: boolean }) => {
+    let disposable = vscode.commands.registerCommand('auto-commit.generate', async (arg?: vscode.SourceControl) => {
         await vscode.commands.executeCommand('setContext', 'auto-commit.isGenerating', true);
         try {
             outputChannel.appendLine('='.repeat(50));
             outputChannel.appendLine(`[${new Date().toISOString()}] Starting auto-commit generation...`);
+            outputChannel.appendLine('Mode: Auto-stage all changes enabled');
 
             // Determine inputs
             let scm: vscode.SourceControl | undefined;
-            let stageUntrackedOnly = false;
 
             if (arg && 'rootUri' in arg) {
                 scm = arg as vscode.SourceControl;
-            } else if (arg && typeof arg === 'object' && 'stageUntrackedOnly' in arg) {
-                stageUntrackedOnly = !!(arg as { stageUntrackedOnly?: boolean }).stageUntrackedOnly;
-            } else if (arg && typeof arg === 'object') {
-               // Handle case where arg is just an object but maybe missing the specific key, or other future args
-               // For now just assume if it's not SourceControl, we treat properties as options
-               if ('stageUntrackedOnly' in arg) {
-                    stageUntrackedOnly = !!(arg as any).stageUntrackedOnly;
-               }
             }
 
             // Get Git extension and repository
@@ -103,13 +95,11 @@ export function activate(context: vscode.ExtensionContext) {
                 async (progress) => {
                     outputChannel.appendLine('Calling generateCommitMessage...');
                     outputChannel.appendLine(`Repository path: ${repository.rootUri.fsPath}`);
-                    outputChannel.appendLine(`Stage untracked only: ${stageUntrackedOnly}`);
 
                     const result = await generateCommitMessage({
                         cwd: repository.rootUri.fsPath,
                         apiKey: apiKey,
-                        stageChanges: false,
-                        stageUntrackedOnly: stageUntrackedOnly,
+                        stageChanges: true,
                     });
 
                     if (result.success && result.message) {

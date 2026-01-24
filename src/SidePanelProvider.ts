@@ -9,7 +9,9 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     private readonly _context: vscode.ExtensionContext,
   ) {}
 
-  private async validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+  private async validateApiKey(
+    apiKey: string,
+  ): Promise<{ valid: boolean; error?: string }> {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
@@ -18,25 +20,35 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (response.ok) {
         return { valid: true };
       }
 
-      const errorData = await response.json().catch(() => ({})) as { error?: { message?: string } };
+      const errorData = (await response.json().catch(() => ({}))) as {
+        error?: { message?: string };
+      };
       const errorMessage = errorData?.error?.message || response.statusText;
 
-      if (response.status === 400 || response.status === 401 || response.status === 403) {
+      if (
+        response.status === 400 ||
+        response.status === 401 ||
+        response.status === 403
+      ) {
         return { valid: false, error: `Invalid API Key: ${errorMessage}` };
       } else if (response.status === 429) {
         return { valid: false, error: `API quota exceeded: ${errorMessage}` };
       } else {
-        return { valid: false, error: `API request failed (${response.status}): ${errorMessage}` };
+        return {
+          valid: false,
+          error: `API request failed (${response.status}): ${errorMessage}`,
+        };
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return { valid: false, error: `Connection error: ${errorMessage}` };
     }
   }
@@ -60,7 +72,10 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         case "saveKey": {
           if (!data.value) {
             vscode.window.showErrorMessage("API Key cannot be empty");
-            this._view?.webview.postMessage({ type: "validationResult", success: false });
+            this._view?.webview.postMessage({
+              type: "validationResult",
+              success: false,
+            });
             return;
           }
 
@@ -69,7 +84,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 
           if (!validationResult.valid) {
             vscode.window.showWarningMessage(
-              `API Key validation failed: ${validationResult.error || "Unable to connect to Gemini API"}`
+              `API Key validation failed: ${validationResult.error || "Unable to connect to Gemini API"}`,
             );
             this._view?.webview.postMessage({
               type: "validationResult",
@@ -81,7 +96,9 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 
           try {
             await this._context.secrets.store("GEMINI_API_KEY", data.value);
-            vscode.window.showInformationMessage("API Key validated and saved successfully!");
+            vscode.window.showInformationMessage(
+              "API Key validated and saved successfully!",
+            );
             this._view?.webview.postMessage({
               type: "validationResult",
               success: true,
@@ -92,15 +109,16 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
             });
           } catch (e) {
             vscode.window.showErrorMessage("Failed to save API Key");
-            this._view?.webview.postMessage({ type: "validationResult", success: false });
+            this._view?.webview.postMessage({
+              type: "validationResult",
+              success: false,
+            });
           }
           break;
         }
         case "generate": {
           try {
-            await vscode.commands.executeCommand("auto-commit.generate", {
-              stageUntrackedOnly: data.stageUntrackedOnly
-            });
+            await vscode.commands.executeCommand("auto-commit.generate");
           } finally {
             this._view?.webview.postMessage({ type: "generationDone" });
           }
@@ -149,19 +167,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     }
     .status { font-size: 0.9em; color: var(--vscode-descriptionForeground); margin-top: 5px; }
     hr { border: 0; border-top: 1px solid var(--vscode-widget-border); width: 100%; }
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 5px;
-    }
-    .checkbox-group input {
-      width: auto;
-    }
-    .checkbox-group label {
-      font-weight: normal;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -176,10 +181,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     <hr />
 
     <div class="input-group">
-      <div class="checkbox-group">
-        <input type="checkbox" id="stageUntrackedOnly">
-        <label for="stageUntrackedOnly">Stage New Files Only</label>
-      </div>
       <button id="generateBtn">Generate Commit Message</button>
     </div>
   </div>
@@ -191,7 +192,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     const generateBtn = document.getElementById('generateBtn');
     const apiKeyInput = document.getElementById('apiKey');
     const keyStatus = document.getElementById('keyStatus');
-    const stageUntrackedOnlyCheckbox = document.getElementById('stageUntrackedOnly');
 
     vscode.postMessage({ type: 'checkKey' });
 
@@ -210,8 +210,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
       vscode.postMessage({ 
-        type: 'generate',
-        stageUntrackedOnly: stageUntrackedOnlyCheckbox.checked
+        type: 'generate'
       });
     });
 
@@ -262,7 +261,8 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 
 function getNonce() {
   let text = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const possible =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   for (let i = 0; i < 32; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }

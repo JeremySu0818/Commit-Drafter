@@ -390,7 +390,6 @@ export interface GenerateCommitMessageOptions {
   apiKey: string;
   model?: string;
   stageChanges?: boolean;
-  stageUntrackedOnly?: boolean;
 }
 
 export interface GenerateCommitMessageResult {
@@ -406,7 +405,7 @@ export interface GenerateCommitMessageResult {
 export async function generateCommitMessage(
   options: GenerateCommitMessageOptions,
 ): Promise<GenerateCommitMessageResult> {
-  const { cwd, apiKey, model, stageChanges = true, stageUntrackedOnly = false } = options;
+  const { cwd, apiKey, model, stageChanges = true } = options;
 
   try {
     const gitOps = new GitOperations(cwd);
@@ -420,17 +419,8 @@ export async function generateCommitMessage(
       );
     }
 
-    // Special handling for untracked files only
-    if (stageUntrackedOnly) {
-      const untrackedFiles = await gitOps.getUntrackedFiles();
-      if (untrackedFiles.length > 0) {
-        const staged = await gitOps.stageFiles(untrackedFiles);
-        if (!staged) {
-          throw new StageFailedError("Failed to stage untracked files");
-        }
-      }
-    } else if (stageChanges) {
-      // Stage all changes if requested
+    // Stage all changes if requested
+    if (stageChanges) {
       const staged = await gitOps.stageAllChanges();
       if (!staged) {
         throw new StageFailedError();
@@ -440,8 +430,8 @@ export async function generateCommitMessage(
     // Get the diff
     let diff = await gitOps.getDiff(true);
 
-    // If no staged changes found and auto-staging was disabled (or untracked-only yielded nothing), try to get unstaged changes
-    if (!diff.trim() && !stageChanges && !stageUntrackedOnly) {
+    // If no staged changes found and auto-staging was disabled, try to get unstaged changes
+    if (!diff.trim() && !stageChanges) {
       diff = await gitOps.getDiff(false);
     }
 

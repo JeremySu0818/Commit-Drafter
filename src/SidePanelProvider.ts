@@ -98,7 +98,9 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         }
         case "generate": {
           try {
-            await vscode.commands.executeCommand("auto-commit.generate");
+            await vscode.commands.executeCommand("auto-commit.generate", {
+              stageUntrackedOnly: data.stageUntrackedOnly
+            });
           } finally {
             this._view?.webview.postMessage({ type: "generationDone" });
           }
@@ -147,6 +149,19 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     }
     .status { font-size: 0.9em; color: var(--vscode-descriptionForeground); margin-top: 5px; }
     hr { border: 0; border-top: 1px solid var(--vscode-widget-border); width: 100%; }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .checkbox-group input {
+      width: auto;
+    }
+    .checkbox-group label {
+      font-weight: normal;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -161,6 +176,10 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     <hr />
 
     <div class="input-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="stageUntrackedOnly">
+        <label for="stageUntrackedOnly">Stage New Files Only</label>
+      </div>
       <button id="generateBtn">Generate Commit Message</button>
     </div>
   </div>
@@ -172,6 +191,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     const generateBtn = document.getElementById('generateBtn');
     const apiKeyInput = document.getElementById('apiKey');
     const keyStatus = document.getElementById('keyStatus');
+    const stageUntrackedOnlyCheckbox = document.getElementById('stageUntrackedOnly');
 
     vscode.postMessage({ type: 'checkKey' });
 
@@ -189,7 +209,10 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     generateBtn.addEventListener('click', () => {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
-      vscode.postMessage({ type: 'generate' });
+      vscode.postMessage({ 
+        type: 'generate',
+        stageUntrackedOnly: stageUntrackedOnlyCheckbox.checked
+      });
     });
 
     window.addEventListener('message', event => {

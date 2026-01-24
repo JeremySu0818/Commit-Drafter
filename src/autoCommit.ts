@@ -240,6 +240,44 @@ export class GitOperations {
       return false;
     }
   }
+
+  /**
+   * Get list of untracked files
+   */
+  async getUntrackedFiles(): Promise<string[]> {
+    try {
+      const { stdout } = await execAsync(
+        "git ls-files --others --exclude-standard",
+        {
+          cwd: this.cwd,
+          encoding: "utf-8",
+        },
+      );
+      return stdout.split("\n").filter((line) => line.trim().length > 0);
+    } catch (error) {
+      console.error("Error getting untracked files:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Stage specific files
+   */
+  async stageFiles(files: string[]): Promise<boolean> {
+    if (files.length === 0) {
+      return true;
+    }
+    try {
+      // Escape filenames to handle spaces/special chars if needed, though simple strings usually work if no weird chars.
+      // Better to wrap in quotes.
+      const fileArgs = files.map((f) => `"${f}"`).join(" ");
+      await execAsync(`git add ${fileArgs}`, { cwd: this.cwd });
+      return true;
+    } catch (error) {
+      console.error("Error staging files:", error);
+      return false;
+    }
+  }
 }
 
 // ============================================================================
@@ -352,6 +390,7 @@ export interface GenerateCommitMessageOptions {
   apiKey: string;
   model?: string;
   stageChanges?: boolean;
+  stageUntrackedOnly?: boolean;
 }
 
 export interface GenerateCommitMessageResult {
@@ -367,7 +406,7 @@ export interface GenerateCommitMessageResult {
 export async function generateCommitMessage(
   options: GenerateCommitMessageOptions,
 ): Promise<GenerateCommitMessageResult> {
-  const { cwd, apiKey, model, stageChanges = true } = options;
+  const { cwd, apiKey, model, stageChanges = true, stageUntrackedOnly = false } = options;
 
   try {
     const gitOps = new GitOperations(cwd);
@@ -381,8 +420,17 @@ export async function generateCommitMessage(
       );
     }
 
-    // Stage all changes if requested
-    if (stageChanges) {
+    // Special handling for untracked files only
+    if (stageUntrackedOnly) {
+      const untrackedFiles = await gitOps.getUntrackedFiles();
+      if (untrackedFiles.length > 0) {
+        const staged = await gitOps.stageFiles(untrackedFiles);
+        if (!staged) {
+          throw new StageFailedError("Failed to stage untracked files");
+        }
+      }
+    } else if (stageChanges) {
+      // Stage all changes if requested
       const staged = await gitOps.stageAllChanges();
       if (!staged) {
         throw new StageFailedError();
@@ -391,9 +439,9 @@ export async function generateCommitMessage(
 
     // Get the diff
     let diff = await gitOps.getDiff(true);
-    
-    // If no staged changes found and auto-staging was disabled, try to get unstaged changes
-    if (!diff.trim() && !stageChanges) {
+
+    // If no staged changes found and auto-staging was disabled (or untracked-only yielded nothing), try to get unstaged changes
+    if (!diff.trim() && !stageChanges && !stageUntrackedOnly) {
       diff = await gitOps.getDiff(false);
     }
 

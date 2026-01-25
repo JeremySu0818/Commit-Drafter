@@ -25,14 +25,12 @@ export function activate(context: vscode.ExtensionContext) {
             outputChannel.appendLine(`[${new Date().toISOString()}] Starting auto-commit generation...`);
             outputChannel.appendLine('Mode: Auto-stage all changes enabled');
 
-            // Determine inputs
             let scm: vscode.SourceControl | undefined;
 
             if (arg && 'rootUri' in arg) {
                 scm = arg as vscode.SourceControl;
             }
 
-            // Get Git extension and repository
             const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
             if (!gitExtension) {
                 outputChannel.appendLine('Error: Git extension not found.');
@@ -70,7 +68,6 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            // Get API key from secure storage
             const apiKey = await context.secrets.get('GEMINI_API_KEY');
             if (!apiKey) {
                 outputChannel.appendLine('Warning: No GEMINI_API_KEY found in secure storage.');
@@ -85,7 +82,6 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            // Generate commit message with progress indicator
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -111,10 +107,9 @@ export function activate(context: vscode.ExtensionContext) {
                     if (result.success && result.message) {
                         outputChannel.appendLine(`Generated message: ${result.message}`);
                         repository.inputBox.value = result.message;
-                        
-                        // 自動跳轉到 Source Control 視圖
+
                         await vscode.commands.executeCommand('workbench.view.scm');
-                        
+
                         vscode.window.showInformationMessage('Commit message generated!');
                     } else if (result.error) {
                         const error = result.error;

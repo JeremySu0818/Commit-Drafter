@@ -134,9 +134,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         case "getModels": {
           const key = await this._context.secrets.get("GEMINI_API_KEY");
           if (key) {
-            // We can optionally validate here, but for now let's just return the hardcoded list
-            // if the key is present. Or we can keep validating to ensure connectivity.
-            // Let's keep validation to be safe, so the user knows if their key is bad.
             const result = await this.validateApiKey(key);
             if (result.valid) {
               const savedModel = this._context.globalState.get("GEMINI_MODEL");
@@ -315,7 +312,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         modelSelect.disabled = false;
         
         if (!foundCurrent && models.length > 0) {
-             // Prefer gemini-2.5-flash if available and no selection
              const preferred = models.find(m => m.includes('gemini-2.5-flash')) || models[0];
              modelSelect.value = preferred;
              vscode.postMessage({ type: 'saveModel', value: preferred });

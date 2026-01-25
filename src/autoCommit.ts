@@ -4,10 +4,6 @@ import { DEFAULT_MODEL } from "./models";
 
 const execAsync = promisify(exec);
 
-// ============================================================================
-// Configuration & Constants
-// ============================================================================
-
 export const EXIT_CODES = {
   SUCCESS: 0,
   NOT_GIT_REPO: 1,
@@ -94,12 +90,6 @@ Your task is to generate a clean, concise, and meaningful content for a git comm
 **Output Format:**
 Return ONLY the commit message. Do not output markdown code blocks (\`\`\`), do not output explanations. Just the raw commit message string.`;
 
-
-
-// ============================================================================
-// Custom Error Classes
-// ============================================================================
-
 export class AutoCommitError extends Error {
   constructor(
     message: string,
@@ -177,16 +167,9 @@ export class StageFailedError extends AutoCommitError {
   }
 }
 
-// ============================================================================
-// Git Operations
-// ============================================================================
-
 export class GitOperations {
   constructor(private readonly cwd: string) {}
 
-  /**
-   * Check if the current directory is inside a Git repository.
-   */
   async isGitRepo(): Promise<boolean> {
     try {
       await execAsync("git rev-parse --is-inside-work-tree", { cwd: this.cwd });
@@ -196,16 +179,13 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Get the git diff (staged changes by default).
-   */
   async getDiff(staged: boolean = true): Promise<string> {
     try {
       const cmd = staged ? "git diff --cached" : "git diff";
       const { stdout } = await execAsync(cmd, {
         cwd: this.cwd,
         encoding: "utf-8",
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
+        maxBuffer: 10 * 1024 * 1024,
       });
       return stdout;
     } catch (error) {
@@ -214,9 +194,6 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Stage all changes in the repository.
-   */
   async stageAllChanges(): Promise<boolean> {
     try {
       await execAsync("git add .", { cwd: this.cwd });
@@ -227,12 +204,8 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Commit changes with the given message.
-   */
   async commitChanges(message: string): Promise<boolean> {
     try {
-      // Escape double quotes in the message for the shell
       const escapedMessage = message.replace(/"/g, '\\"');
       await execAsync(`git commit -m "${escapedMessage}"`, { cwd: this.cwd });
       return true;
@@ -242,9 +215,6 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Get list of untracked files
-   */
   async getUntrackedFiles(): Promise<string[]> {
     try {
       const { stdout } = await execAsync(
@@ -261,16 +231,11 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Stage specific files
-   */
   async stageFiles(files: string[]): Promise<boolean> {
     if (files.length === 0) {
       return true;
     }
     try {
-      // Escape filenames to handle spaces/special chars if needed, though simple strings usually work if no weird chars.
-      // Better to wrap in quotes.
       const fileArgs = files.map((f) => `"${f}"`).join(" ");
       await execAsync(`git add ${fileArgs}`, { cwd: this.cwd });
       return true;
@@ -280,10 +245,6 @@ export class GitOperations {
     }
   }
 }
-
-// ============================================================================
-// LLM Client (Gemini API)
-// ============================================================================
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -313,9 +274,6 @@ export class LLMClient {
     this.model = (model || DEFAULT_MODEL).replace(/^models\//, "");
   }
 
-  /**
-   * Generate a commit message based on the git diff.
-   */
   async generateCommitMessage(diff: string): Promise<string> {
     if (!diff.trim()) {
       throw new NoChangesError();
@@ -382,10 +340,6 @@ export class LLMClient {
   }
 }
 
-// ============================================================================
-// Main Auto-Commit Function
-// ============================================================================
-
 export interface GenerateCommitMessageOptions {
   cwd: string;
   apiKey: string;
@@ -399,10 +353,6 @@ export interface GenerateCommitMessageResult {
   error?: AutoCommitError;
 }
 
-/**
- * Generate a commit message for the staged changes in the repository.
- * This is the main function that orchestrates the entire process.
- */
 export async function generateCommitMessage(
   options: GenerateCommitMessageOptions,
 ): Promise<GenerateCommitMessageResult> {
@@ -411,7 +361,6 @@ export async function generateCommitMessage(
   try {
     const gitOps = new GitOperations(cwd);
 
-    // Check if in a git repository
     if (!(await gitOps.isGitRepo())) {
       throw new AutoCommitError(
         "Not a git repository. Please run this command inside a git repository.",
@@ -420,7 +369,6 @@ export async function generateCommitMessage(
       );
     }
 
-    // Stage all changes if requested
     if (stageChanges) {
       const staged = await gitOps.stageAllChanges();
       if (!staged) {
@@ -428,10 +376,8 @@ export async function generateCommitMessage(
       }
     }
 
-    // Get the diff
     let diff = await gitOps.getDiff(true);
 
-    // If no staged changes found and auto-staging was disabled, try to get unstaged changes
     if (!diff.trim() && !stageChanges) {
       diff = await gitOps.getDiff(false);
     }
@@ -440,7 +386,6 @@ export async function generateCommitMessage(
       throw new NoChangesError();
     }
 
-    // Generate commit message using LLM
     const llmClient = new LLMClient(apiKey, model);
     const commitMessage = await llmClient.generateCommitMessage(diff);
 

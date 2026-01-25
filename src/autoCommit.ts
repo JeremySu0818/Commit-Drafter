@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import { DEFAULT_MODEL } from "./models";
 
 const execAsync = promisify(exec);
 
@@ -93,7 +94,7 @@ Your task is to generate a clean, concise, and meaningful content for a git comm
 **Output Format:**
 Return ONLY the commit message. Do not output markdown code blocks (\`\`\`), do not output explanations. Just the raw commit message string.`;
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
 
 // ============================================================================
 // Custom Error Classes
@@ -308,7 +309,8 @@ export class LLMClient {
       throw new APIKeyMissingError();
     }
     this.apiKey = apiKey;
-    this.model = model || DEFAULT_GEMINI_MODEL;
+    this.apiKey = apiKey;
+    this.model = (model || DEFAULT_MODEL).replace(/^models\//, "");
   }
 
   /**
@@ -341,7 +343,6 @@ export class LLMClient {
             temperature: 0.7,
             topP: 0.95,
             topK: 40,
-            maxOutputTokens: 1024,
           },
         }),
       });

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { GEMINI_MODELS } from "./models";
 
 export class SidePanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "auto-commit.view";
@@ -11,7 +12,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 
   private async validateApiKey(
     apiKey: string,
-  ): Promise<{ valid: boolean; error?: string }> {
+  ): Promise<{ valid: boolean; error?: string; models?: string[] }> {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
@@ -24,7 +25,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       );
 
       if (response.ok) {
-        return { valid: true };
+        return { valid: true, models: GEMINI_MODELS };
       }
 
       const errorData = (await response.json().catch(() => ({}))) as {
@@ -102,6 +103,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
             this._view?.webview.postMessage({
               type: "validationResult",
               success: true,
+              models: validationResult.models,
             });
             this._view?.webview.postMessage({
               type: "keyStatus",
@@ -127,6 +129,28 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         case "checkKey": {
           const key = await this._context.secrets.get("GEMINI_API_KEY");
           this._view?.webview.postMessage({ type: "keyStatus", hasKey: !!key });
+          break;
+        }
+        case "getModels": {
+          const key = await this._context.secrets.get("GEMINI_API_KEY");
+          if (key) {
+            // We can optionally validate here, but for now let's just return the hardcoded list
+            // if the key is present. Or we can keep validating to ensure connectivity.
+            // Let's keep validation to be safe, so the user knows if their key is bad.
+            const result = await this.validateApiKey(key);
+            if (result.valid) {
+              const savedModel = this._context.globalState.get("GEMINI_MODEL");
+              this._view?.webview.postMessage({
+                type: "modelsList",
+                models: GEMINI_MODELS,
+                currentModel: savedModel,
+              });
+            }
+          }
+          break;
+        }
+        case "saveModel": {
+          await this._context.globalState.update("GEMINI_MODEL", data.value);
           break;
         }
       }
@@ -161,9 +185,15 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       cursor: pointer; 
     }
     button:hover { background: var(--vscode-button-hoverBackground); }
-    button:disabled {
+    button:disabled, select:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+    select {
+      padding: 5px;
+      background: var(--vscode-dropdown-background);
+      color: var(--vscode-dropdown-foreground);
+      border: 1px solid var(--vscode-dropdown-border);
     }
     .status { font-size: 0.9em; color: var(--vscode-descriptionForeground); margin-top: 5px; }
     hr { border: 0; border-top: 1px solid var(--vscode-widget-border); width: 100%; }
@@ -176,6 +206,13 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       <input type="password" id="apiKey" placeholder="Enter your Gemini API Key">
       <button id="saveBtn">Save Key</button>
       <span id="keyStatus" class="status">Checking key status...</span>
+    </div>
+
+    <div class="input-group">
+      <label>Model</label>
+      <select id="modelSelect" disabled>
+        <option value="" disabled selected>Select a model...</option>
+      </select>
     </div>
     
     <hr />
@@ -192,6 +229,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     const generateBtn = document.getElementById('generateBtn');
     const apiKeyInput = document.getElementById('apiKey');
     const keyStatus = document.getElementById('keyStatus');
+    const modelSelect = document.getElementById('modelSelect');
 
     vscode.postMessage({ type: 'checkKey' });
 
@@ -224,10 +262,14 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
           if (message.hasKey) {
             keyStatus.textContent = 'API Key is set';
             keyStatus.style.color = 'var(--vscode-testing-iconPassed)';
+            vscode.postMessage({ type: 'getModels' });
           } else {
             keyStatus.textContent = 'API Key not set';
             keyStatus.style.color = 'var(--vscode-testing-iconFailed)';
           }
+          break;
+        case 'modelsList':
+          populateModels(message.models, message.currentModel);
           break;
         case 'validating':
           saveBtn.disabled = true;
@@ -242,6 +284,9 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
             keyStatus.textContent = 'API Key validated and saved!';
             keyStatus.style.color = 'var(--vscode-testing-iconPassed)';
             apiKeyInput.value = '';
+            if (message.models) {
+              populateModels(message.models);
+            }
           } else {
             keyStatus.textContent = message.error || 'Validation failed';
             keyStatus.style.color = 'var(--vscode-testing-iconFailed)';
@@ -252,6 +297,33 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
           generateBtn.textContent = 'Generate Commit Message';
           break;
       }
+    });
+
+    function populateModels(models, currentModel) {
+        modelSelect.innerHTML = '';
+        let foundCurrent = false;
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            if (model === currentModel) {
+                option.selected = true;
+                foundCurrent = true;
+            }
+            modelSelect.appendChild(option);
+        });
+        modelSelect.disabled = false;
+        
+        if (!foundCurrent && models.length > 0) {
+             // Prefer gemini-2.5-flash if available and no selection
+             const preferred = models.find(m => m.includes('gemini-2.5-flash')) || models[0];
+             modelSelect.value = preferred;
+             vscode.postMessage({ type: 'saveModel', value: preferred });
+        }
+    }
+
+    modelSelect.addEventListener('change', () => {
+        vscode.postMessage({ type: 'saveModel', value: modelSelect.value });
     });
   </script>
 </body>

@@ -96,10 +96,16 @@ export function activate(context: vscode.ExtensionContext) {
                     outputChannel.appendLine('Calling generateCommitMessage...');
                     outputChannel.appendLine(`Repository path: ${repository.rootUri.fsPath}`);
 
+                    const savedModel = context.globalState.get<string>('GEMINI_MODEL');
+                    if (savedModel) {
+                        outputChannel.appendLine(`Using custom model: ${savedModel}`);
+                    }
+
                     const result = await generateCommitMessage({
                         cwd: repository.rootUri.fsPath,
                         apiKey: apiKey,
                         stageChanges: true,
+                        model: savedModel,
                     });
 
                     if (result.success && result.message) {

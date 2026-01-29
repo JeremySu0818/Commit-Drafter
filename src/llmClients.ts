@@ -43,8 +43,13 @@ export interface LLMClientOptions {
   model?: string;
 }
 
+export type ProgressCallback = (message: string, increment?: number) => void;
+
 export interface ILLMClient {
-  generateCommitMessage(diff: string): Promise<string>;
+  generateCommitMessage(
+    diff: string,
+    onProgress?: ProgressCallback,
+  ): Promise<string>;
 }
 
 export class GeminiClient implements ILLMClient {
@@ -255,7 +260,10 @@ export class OllamaClient implements ILLMClient {
     this.model = model || DEFAULT_MODELS.ollama;
   }
 
-  async generateCommitMessage(diff: string): Promise<string> {
+  async generateCommitMessage(
+    diff: string,
+    onProgress?: ProgressCallback,
+  ): Promise<string> {
     if (!diff.trim()) {
       throw new NoChangesError();
     }
@@ -263,6 +271,32 @@ export class OllamaClient implements ILLMClient {
     try {
       const { Ollama } = await import("ollama");
       const client = new Ollama({ host: this.host });
+
+      // Pull model with progress reporting
+      const pullStream = await client.pull({ model: this.model, stream: true });
+      let lastPercent = 0;
+      for await (const part of pullStream) {
+        if (part.total && part.completed) {
+          const percent = Math.round((part.completed / part.total) * 100);
+          if (percent > lastPercent) {
+            const increment = percent - lastPercent;
+            lastPercent = percent;
+            if (onProgress) {
+              onProgress(
+                `Pulling ${this.model}: ${part.status} (${percent}%)`,
+                increment,
+              );
+            }
+          }
+        } else if (part.status && onProgress) {
+          onProgress(`Pulling ${this.model}: ${part.status}`);
+        }
+      }
+
+      if (onProgress) {
+        onProgress("Generating commit message...", 0);
+      }
+
       const response = await client.chat({
         model: this.model,
         messages: [

@@ -124,10 +124,15 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
 
+        const progressTitle =
+          currentProvider === "ollama"
+            ? "Ollama"
+            : `Generating commit message with ${PROVIDER_DISPLAY_NAMES[currentProvider]}...`;
+
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Generating commit message with ${PROVIDER_DISPLAY_NAMES[currentProvider]}...`,
+            title: progressTitle,
             cancellable: false,
           },
           async (progress) => {
@@ -149,6 +154,12 @@ export function activate(context: vscode.ExtensionContext) {
               apiKey: apiKey || "",
               stageChanges: true,
               model: savedModel,
+              onProgress:
+                currentProvider === "ollama"
+                  ? (message, increment) => {
+                      progress.report({ message, increment });
+                    }
+                  : undefined,
             });
 
             if (result.success && result.message) {

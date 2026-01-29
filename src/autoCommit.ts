@@ -3,7 +3,7 @@
 import { exec } from "child_process";
 import { promisify } from "util";
 import { APIProvider, DEFAULT_MODELS } from "./models";
-import { createLLMClient } from "./llmClients";
+import { createLLMClient, ProgressCallback } from "./llmClients";
 import {
   EXIT_CODES,
   AutoCommitError,
@@ -110,6 +110,7 @@ export interface GenerateCommitMessageOptions {
   apiKey: string;
   model?: string;
   stageChanges?: boolean;
+  onProgress?: ProgressCallback;
 }
 
 export interface GenerateCommitMessageResult {
@@ -121,7 +122,14 @@ export interface GenerateCommitMessageResult {
 export async function generateCommitMessage(
   options: GenerateCommitMessageOptions,
 ): Promise<GenerateCommitMessageResult> {
-  const { cwd, provider, apiKey, model, stageChanges = true } = options;
+  const {
+    cwd,
+    provider,
+    apiKey,
+    model,
+    stageChanges = true,
+    onProgress,
+  } = options;
   try {
     const gitOps = new GitOperations(cwd);
     if (!(await gitOps.isGitRepo())) {
@@ -149,7 +157,10 @@ export async function generateCommitMessage(
       apiKey,
       model: model || DEFAULT_MODELS[provider],
     });
-    const commitMessage = await llmClient.generateCommitMessage(diff);
+    const commitMessage = await llmClient.generateCommitMessage(
+      diff,
+      onProgress,
+    );
     return {
       success: true,
       message: commitMessage,

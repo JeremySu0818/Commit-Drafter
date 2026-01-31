@@ -272,7 +272,6 @@ export class OllamaClient implements ILLMClient {
       const { Ollama } = await import("ollama");
       const client = new Ollama({ host: this.host });
 
-      // Pull model with progress reporting
       const pullStream = await client.pull({ model: this.model, stream: true });
       let lastPercent = 0;
       for await (const part of pullStream) {

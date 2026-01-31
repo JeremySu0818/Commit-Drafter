@@ -10,6 +10,7 @@ import {
   API_KEY_STORAGE_KEYS,
   OLLAMA_DEFAULT_HOST,
 } from "./models";
+import { GenerationStateManager, ValidationStateManager } from "./extension";
 
 export class SidePanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "commit-copilot.view";
@@ -188,6 +189,28 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     };
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
+    const onGenerationStateChange = () => {
+      this._view?.webview.postMessage({
+        type: "generationStatusUpdate",
+        isGenerating: GenerationStateManager.isGenerating,
+      });
+    };
+    GenerationStateManager.addListener(onGenerationStateChange);
+
+    const onValidationStateChange = () => {
+      this._view?.webview.postMessage({
+        type: "validationStatusUpdate",
+        isValidating: ValidationStateManager.isValidating,
+        provider: ValidationStateManager.validatingProvider,
+      });
+    };
+    ValidationStateManager.addListener(onValidationStateChange);
+
+    webviewView.onDidDispose(() => {
+      GenerationStateManager.removeListener(onGenerationStateChange);
+      ValidationStateManager.removeListener(onValidationStateChange);
+    });
+
     const checkGitStatus = () => {
       try {
         const gitExtension = vscode.extensions.getExtension<any>("vscode.git");
@@ -292,50 +315,55 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
             });
             return;
           }
+          ValidationStateManager.setValidating(true, provider);
           this._view?.webview.postMessage({ type: "validating", provider });
-          const validationResult = await this.validateApiKey(
-            provider,
-            apiKey || OLLAMA_DEFAULT_HOST,
-          );
-          if (!validationResult.valid) {
-            vscode.window.showWarningMessage(
-              `Validation failed: ${validationResult.error || "Unable to connect"}`,
-            );
-            this._view?.webview.postMessage({
-              type: "validationResult",
-              success: false,
-              error: validationResult.error,
-              provider,
-            });
-            return;
-          }
           try {
-            const storageKey = API_KEY_STORAGE_KEYS[provider];
-            await this._context.secrets.store(
-              storageKey,
+            const validationResult = await this.validateApiKey(
+              provider,
               apiKey || OLLAMA_DEFAULT_HOST,
             );
-            vscode.window.showInformationMessage(
-              `${PROVIDER_DISPLAY_NAMES[provider]} configuration saved successfully!`,
-            );
-            this._view?.webview.postMessage({
-              type: "validationResult",
-              success: true,
-              models: MODELS_BY_PROVIDER[provider],
-              provider,
-            });
-            this._view?.webview.postMessage({
-              type: "keyStatus",
-              hasKey: true,
-              provider,
-            });
-          } catch (e) {
-            vscode.window.showErrorMessage("Failed to save configuration");
-            this._view?.webview.postMessage({
-              type: "validationResult",
-              success: false,
-              provider,
-            });
+            if (!validationResult.valid) {
+              vscode.window.showWarningMessage(
+                `Validation failed: ${validationResult.error || "Unable to connect"}`,
+              );
+              this._view?.webview.postMessage({
+                type: "validationResult",
+                success: false,
+                error: validationResult.error,
+                provider,
+              });
+              return;
+            }
+            try {
+              const storageKey = API_KEY_STORAGE_KEYS[provider];
+              await this._context.secrets.store(
+                storageKey,
+                apiKey || OLLAMA_DEFAULT_HOST,
+              );
+              vscode.window.showInformationMessage(
+                `${PROVIDER_DISPLAY_NAMES[provider]} configuration saved successfully!`,
+              );
+              this._view?.webview.postMessage({
+                type: "validationResult",
+                success: true,
+                models: MODELS_BY_PROVIDER[provider],
+                provider,
+              });
+              this._view?.webview.postMessage({
+                type: "keyStatus",
+                hasKey: true,
+                provider,
+              });
+            } catch (e) {
+              vscode.window.showErrorMessage("Failed to save configuration");
+              this._view?.webview.postMessage({
+                type: "validationResult",
+                success: false,
+                provider,
+              });
+            }
+          } finally {
+            ValidationStateManager.setValidating(false, null);
           }
           break;
         }
@@ -419,6 +447,21 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({
             type: "allKeyStatuses",
             statuses: keyStatuses,
+          });
+          break;
+        }
+        case "checkGenerationStatus": {
+          this._view?.webview.postMessage({
+            type: "generationStatusUpdate",
+            isGenerating: GenerationStateManager.isGenerating,
+          });
+          break;
+        }
+        case "checkValidationStatus": {
+          this._view?.webview.postMessage({
+            type: "validationStatusUpdate",
+            isValidating: ValidationStateManager.isValidating,
+            provider: ValidationStateManager.validatingProvider,
           });
           break;
         }
@@ -713,6 +756,8 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     vscode.postMessage({ type: 'getProvider' });
     vscode.postMessage({ type: 'checkGit' });
     vscode.postMessage({ type: 'getAllKeys' });
+    vscode.postMessage({ type: 'checkGenerationStatus' });
+    vscode.postMessage({ type: 'checkValidationStatus' });
 
     providerSelect.addEventListener('change', () => {
       const provider = providerSelect.value;
@@ -791,6 +836,17 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         case 'generationDone':
           isGenerating = false;
           updateGenerateBtn();
+          break;
+        case 'generationStatusUpdate':
+          isGenerating = message.isGenerating;
+          updateGenerateBtn();
+          break;
+        case 'validationStatusUpdate':
+          if (message.isValidating && message.provider === currentProvider) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Validating...';
+            keyStatus.innerHTML = '<span class="status-dot warning"></span>Validating...';
+          }
           break;
       }
     });

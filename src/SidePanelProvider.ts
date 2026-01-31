@@ -688,6 +688,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       if (provider === 'ollama') {
         apiKeyLabel.textContent = 'Ollama Host URL';
         apiKeyInput.placeholder = ollamaDefaultHost;
+        apiKeyInput.value = ollamaDefaultHost;
         apiKeyInput.type = 'text';
         configTitle.textContent = ' Ollama Configuration';
         providerInfo.innerHTML = \`
@@ -697,6 +698,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         \`;
       } else {
         apiKeyLabel.textContent = 'API Key';
+        apiKeyInput.value = '';
         apiKeyInput.type = 'password';
         configTitle.textContent = ' API Configuration';
         if (provider === 'google') {
@@ -763,7 +765,6 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
       const provider = providerSelect.value;
       updateProviderUI(provider);
       vscode.postMessage({ type: 'saveProvider', value: provider });
-      apiKeyInput.value = '';
       saveBtn.disabled = provider !== 'ollama';
     });
 
@@ -820,7 +821,9 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         case 'validationResult':
           if (message.success) {
             keyStatus.innerHTML = '<span class="status-dot success"></span>Saved ';
-            apiKeyInput.value = '';
+            if (currentProvider !== 'ollama') {
+              apiKeyInput.value = '';
+            }
             saveBtn.disabled = currentProvider !== 'ollama';
             saveBtn.textContent = 'Save';
             if (message.models) {

@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo [*] Starting build process for Auto-Commit...
+echo [*] Starting build process for Commit-Drafter...
 
 echo.
 echo [*] Step 1: Installing dependencies...
@@ -25,7 +25,9 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [*] Step 3: Packaging VS Code Extension (.vsix)...
-echo.
+echo.
+
+
 call npx vsce package
 if %ERRORLEVEL% neq 0 (
     echo [!] vsce package failed

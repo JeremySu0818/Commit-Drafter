@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "[*] Starting build process for Auto-Commit..."
+echo "[*] Starting build process for Commit-Drafter..."
 echo
 
 echo "[*] Step 1: Installing dependencies..."

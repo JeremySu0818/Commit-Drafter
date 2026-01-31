@@ -12,7 +12,7 @@ import {
 } from "./models";
 
 export class SidePanelProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "auto-commit.view";
+  public static readonly viewType = "commit-drafter.view";
   private _view?: vscode.WebviewView;
 
   constructor(
@@ -211,7 +211,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
           });
         }
       } catch (error) {
-        console.error("[Auto-Commit] Error checking git status:", error);
+        console.error("[Commit-Drafter] Error checking git status:", error);
       }
     };
 
@@ -268,14 +268,14 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
             }
           } catch (err) {
             console.error(
-              "[Auto-Commit] Failed to activate git extension:",
+              "[Commit-Drafter] Failed to activate git extension:",
               err,
             );
           }
         })();
       }
     } catch (error) {
-      console.error("[Auto-Commit] Error setting up git listeners:", error);
+      console.error("[Commit-Drafter] Error setting up git listeners:", error);
     }
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
@@ -341,7 +341,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
         }
         case "generate": {
           try {
-            await vscode.commands.executeCommand("auto-commit.generate");
+            await vscode.commands.executeCommand("commit-drafter.generate");
           } finally {
             this._view?.webview.postMessage({ type: "generationDone" });
           }
@@ -439,7 +439,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auto Commit</title>
+  <title>Commit Drafter</title>
   <style>
     body { 
       font-family: var(--vscode-font-family); 

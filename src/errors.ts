@@ -31,7 +31,7 @@ export const ERROR_MESSAGES: Record<
   },
   [EXIT_CODES.API_KEY_MISSING]: {
     title: "API Key not configured",
-    action: "Please set your API Key in the Auto-Commit panel.",
+    action: "Please set your API Key in the Commit-Drafter panel.",
   },
   [EXIT_CODES.API_KEY_INVALID]: {
     title: "Invalid API Key",
@@ -53,22 +53,22 @@ export const ERROR_MESSAGES: Record<
   },
   [EXIT_CODES.UNKNOWN_ERROR]: {
     title: "An unexpected error occurred",
-    action: 'Check the "Auto-Commit Debug" output for details.',
+    action: 'Check the "Commit-Drafter Debug" output for details.',
   },
 };
 
-export class AutoCommitError extends Error {
+export class CommitDrafterError extends Error {
   constructor(
     message: string,
     public readonly errorCode: string = "UNKNOWN",
     public readonly exitCode: number = EXIT_CODES.UNKNOWN_ERROR,
   ) {
     super(message);
-    this.name = "AutoCommitError";
+    this.name = "CommitDrafterError";
   }
 }
 
-export class APIKeyMissingError extends AutoCommitError {
+export class APIKeyMissingError extends CommitDrafterError {
   constructor() {
     super(
       "API Key is not set. Please configure your API key.",
@@ -79,7 +79,7 @@ export class APIKeyMissingError extends AutoCommitError {
   }
 }
 
-export class APIKeyInvalidError extends AutoCommitError {
+export class APIKeyInvalidError extends CommitDrafterError {
   constructor(details?: string) {
     super(
       `Invalid API Key${details ? `: ${details}` : ""}`,
@@ -90,7 +90,7 @@ export class APIKeyInvalidError extends AutoCommitError {
   }
 }
 
-export class APIQuotaExceededError extends AutoCommitError {
+export class APIQuotaExceededError extends CommitDrafterError {
   constructor(details?: string) {
     super(
       `API quota exceeded${details ? `: ${details}` : ""}`,
@@ -101,7 +101,7 @@ export class APIQuotaExceededError extends AutoCommitError {
   }
 }
 
-export class APIRequestError extends AutoCommitError {
+export class APIRequestError extends CommitDrafterError {
   constructor(details?: string) {
     super(
       `API request failed${details ? `: ${details}` : ""}`,
@@ -112,7 +112,7 @@ export class APIRequestError extends AutoCommitError {
   }
 }
 
-export class NoChangesError extends AutoCommitError {
+export class NoChangesError extends CommitDrafterError {
   constructor() {
     super(
       "No changes detected to generate a commit for.",
@@ -123,7 +123,7 @@ export class NoChangesError extends AutoCommitError {
   }
 }
 
-export class StageFailedError extends AutoCommitError {
+export class StageFailedError extends CommitDrafterError {
   constructor(details?: string) {
     super(
       `Failed to stage changes${details ? `: ${details}` : ""}`,

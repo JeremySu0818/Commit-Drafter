@@ -6,8 +6,8 @@ import {
   generateCommitMessage,
   EXIT_CODES,
   ERROR_MESSAGES,
-  AutoCommitError,
-} from "./autoCommit";
+  CommitDrafterError,
+} from "./commitDrafter";
 import {
   APIProvider,
   API_KEY_STORAGE_KEYS,
@@ -16,9 +16,11 @@ import {
 } from "./models";
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("Auto-Commit extension is now active!");
+  console.log("Commit-Drafter extension is now active!");
 
-  const outputChannel = vscode.window.createOutputChannel("Auto-Commit Debug");
+  const outputChannel = vscode.window.createOutputChannel(
+    "Commit-Drafter Debug",
+  );
   context.subscriptions.push(outputChannel);
 
   const provider = new SidePanelProvider(context.extensionUri, context);
@@ -30,18 +32,18 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   let disposable = vscode.commands.registerCommand(
-    "auto-commit.generate",
+    "commit-drafter.generate",
     async (arg?: vscode.SourceControl) => {
       await vscode.commands.executeCommand(
         "setContext",
-        "auto-commit.isGenerating",
+        "commit-drafter.isGenerating",
         true,
       );
 
       try {
         outputChannel.appendLine("=".repeat(50));
         outputChannel.appendLine(
-          `[${new Date().toISOString()}] Starting auto-commit generation...`,
+          `[${new Date().toISOString()}] Starting commit-drafter generation...`,
         );
         outputChannel.appendLine("Mode: Auto-stage all changes enabled");
 
@@ -114,12 +116,12 @@ export function activate(context: vscode.ExtensionContext) {
           );
           const setKeyAction = "Configure API Key";
           const result = await vscode.window.showWarningMessage(
-            `${PROVIDER_DISPLAY_NAMES[currentProvider]} API Key is not configured. Please set your API Key in the Auto-Commit panel first.`,
+            `${PROVIDER_DISPLAY_NAMES[currentProvider]} API Key is not configured. Please set your API Key in the Commit-Drafter panel first.`,
             setKeyAction,
           );
 
           if (result === setKeyAction) {
-            await vscode.commands.executeCommand("auto-commit.view.focus");
+            await vscode.commands.executeCommand("commit-drafter.view.focus");
           }
           return;
         }
@@ -186,7 +188,7 @@ export function activate(context: vscode.ExtensionContext) {
                   "Configure API Key",
                 );
                 if (action === "Configure API Key") {
-                  vscode.commands.executeCommand("auto-commit.view.focus");
+                  vscode.commands.executeCommand("commit-drafter.view.focus");
                 }
               } else if (error.exitCode === EXIT_CODES.QUOTA_EXCEEDED) {
                 const action = await vscode.window.showErrorMessage(
@@ -220,11 +222,13 @@ export function activate(context: vscode.ExtensionContext) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         outputChannel.appendLine(`Unexpected error: ${errorMessage}`);
-        vscode.window.showErrorMessage(`Auto-Commit failed: ${errorMessage}`);
+        vscode.window.showErrorMessage(
+          `Commit-Drafter failed: ${errorMessage}`,
+        );
       } finally {
         await vscode.commands.executeCommand(
           "setContext",
-          "auto-commit.isGenerating",
+          "commit-drafter.isGenerating",
           false,
         );
       }

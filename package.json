@@ -1,13 +1,13 @@
 {
-  "name": "auto-commit",
-  "displayName": "Auto-Commit",
+  "name": "commit-drafter",
+  "displayName": "Commit Drafter",
   "description": "Generate conventional commit messages using LLMs.",
-  "version": "1.0.6",
+  "version": "1.0.0",
   "publisher": "JeremySu0818",
   "icon": "resources/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JeremySu0818/Auto-Commit"
+    "url": "https://github.com/JeremySu0818/Commit-Drafter"
   },
   "engines": {
     "vscode": "^1.80.0"
@@ -21,17 +21,17 @@
   "contributes": {
     "commands": [
       {
-        "command": "auto-commit.generate",
-        "title": "Auto-Commit: Generate Commit Message",
-        "category": "Auto-Commit",
+        "command": "commit-drafter.generate",
+        "title": "Commit-Drafter: Generate Commit Message",
+        "category": "Commit-Drafter",
         "icon": "$(sparkle)",
-        "enablement": "!auto-commit.isGenerating"
+        "enablement": "!commit-drafter.isGenerating"
       }
     ],
     "menus": {
       "scm/title": [
         {
-          "command": "auto-commit.generate",
+          "command": "commit-drafter.generate",
           "group": "navigation",
           "when": "scmProvider == git"
         }
@@ -40,18 +40,18 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "auto-commit-activitybar",
-          "title": "Auto Commit",
+          "id": "commit-drafter-activitybar",
+          "title": "Commit Drafter",
           "icon": "$(sparkle)"
         }
       ]
     },
     "views": {
-      "auto-commit-activitybar": [
+      "commit-drafter-activitybar": [
         {
           "type": "webview",
-          "id": "auto-commit.view",
-          "name": "Auto Commit",
+          "id": "commit-drafter.view",
+          "name": "Commit Drafter",
           "icon": "$(sparkle)"
         }
       ]

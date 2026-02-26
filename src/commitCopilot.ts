@@ -2,6 +2,7 @@
 
 import { APIProvider, DEFAULT_MODELS } from "./models";
 import { createLLMClient, ProgressCallback } from "./llmClients";
+import { runAgentLoop } from "./agentLoop";
 import {
   EXIT_CODES,
   CommitCopilotError,
@@ -170,15 +171,15 @@ export async function generateCommitMessage(
     if (!diff.trim()) {
       throw new NoChangesError();
     }
-    const llmClient = createLLMClient({
+    const repoRoot = repository.rootUri.fsPath;
+    const commitMessage = await runAgentLoop({
       provider,
       apiKey,
       model: model || DEFAULT_MODELS[provider],
-    });
-    const commitMessage = await llmClient.generateCommitMessage(
       diff,
+      repoRoot,
       onProgress,
-    );
+    });
     return {
       success: true,
       message: commitMessage,

@@ -61,7 +61,7 @@ export const MODELS_BY_PROVIDER: Record<APIProvider, ModelConfig[]> = {
 };
 
 export const DEFAULT_MODELS: Record<APIProvider, string> = {
-  google: "gemini-2.5-flash",
+  google: "gemini-3-flash-preview",
   openai: "gpt-5-mini",
   anthropic: "claude-haiku-4-5-20251001",
   ollama: "gemma3:12b",

@@ -80,8 +80,8 @@ export const AGENT_TOOLS: ToolDefinition[] = [
     },
 ];
 
-const MAX_FILE_LINES = 300;
-const MAX_OUTLINE_LINES = 150;
+const MAX_FILE_LINES = Infinity;
+const MAX_OUTLINE_LINES = Infinity;
 
 function executeGetDiff(
     _repoRoot: string,
@@ -356,7 +356,7 @@ export function getProjectStructure(repoRoot: string): string {
         ".idea",
     ]);
 
-    const MAX_FILES = 200;
+    const MAX_FILES = Infinity;
     let fileCount = 0;
 
     function walk(dir: string, prefix: string = ""): string[] {

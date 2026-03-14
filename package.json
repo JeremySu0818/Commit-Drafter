@@ -2,7 +2,7 @@
   "name": "commit-copilot",
   "displayName": "Commit Copilot",
   "description": "Generate conventional commit messages using LLMs.",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "publisher": "JeremySu0818",
   "icon": "resources/icon.png",
   "repository": {

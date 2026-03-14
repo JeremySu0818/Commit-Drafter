@@ -39,5 +39,3 @@ echo.
 echo [*] Build completed successfully!
 echo [*] You should see a .vsix file in the current directory.
 echo.
-
-pause
